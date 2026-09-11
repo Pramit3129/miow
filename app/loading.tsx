@@ -1,0 +1,2 @@
+import {Skeleton} from '@/components/ui/skeleton';
+export default function Loading(){return <div aria-label="Loading your workspace" className="loading-workspace"><aside><Skeleton className="h-9 w-28"/>{[1,2,3,4,5].map(i=><Skeleton key={i} className="h-9 w-full mt-5"/>)}</aside><main><Skeleton className="h-8 w-72"/><Skeleton className="h-4 w-96 mt-5"/><div className="loading-metrics">{[1,2,3,4].map(i=><Skeleton key={i} className="h-24 flex-1"/>)}</div>{[1,2,3,4].map(i=><Skeleton key={i} className="h-16 w-full mt-4"/>)}</main></div>}
