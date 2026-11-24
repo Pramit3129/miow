@@ -23,7 +23,10 @@ import {
   TrendingUp,
   TrendingDown,
   X,
+  LogOut,
+  UserRound,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   SidebarProvider,
   Sidebar,
@@ -58,6 +61,8 @@ const navigation = [
   ["Activity", Activity],
   ["Profile", User],
 ] as const;
+/** Notifications live behind the bell, Activity behind the dashboard, and the profile opens in a dialog. */
+const sidebarSections: string[] = ["Dashboard", "Applications", "Forms", "Documents", "Reports"];
 /** Pipeline value (£m) over the last eleven months, for the hero sparkline. */
 const pipelineTrend = [3.05, 3.2, 3.12, 3.45, 3.55, 3.48, 3.62, 3.81, 3.9, 3.732, 4.21];
 const trendMonths = [
@@ -81,6 +86,7 @@ export default function Home() {
   const [selected, setSelected] = useState(initialApps[0]);
   const [apps, setApps] = useState(initialApps);
   const [scrolled, setScrolled] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   useEffect(() => {
     const sync = () => {
       try {
@@ -166,12 +172,7 @@ export default function Home() {
   };
   const broker = role === "Broker";
   /** Child pages keep their parent section selected so the sidebar always answers "where am I?". */
-  const parent =
-    page === "Application details" || page === "New application"
-      ? "Applications"
-      : ["Login", "Sign up", "Forgot password"].includes(page)
-        ? "Profile"
-        : null;
+  const parent = page === "Application details" || page === "New application" ? "Applications" : null;
   const section = parent ?? page;
   const [navRef, navIndicatorRef] = useSlidingIndicator<HTMLElement>(".nav-item.active", section + role);
   return (
@@ -203,34 +204,73 @@ export default function Home() {
             <span ref={navIndicatorRef} className="slide-indicator" aria-hidden="true" />
             <span className="nav-label">Workspace</span>
             {navigation
+              .filter(([label]) => sidebarSections.includes(label))
               .filter(([label]) => broker || !["Forms", "Reports"].includes(label))
               .map(([label, Icon]) => (
-                <div key={label}>
-                  {label === "Notifications" && <span className="nav-label spaced">Activity</span>}
-                  {label === "Profile" && <span className="nav-label spaced">Account</span>}
-                  <button
-                    className={"nav-item " + (section === label ? "active" : "")}
-                    aria-current={page === label ? "page" : undefined}
-                    onClick={() => go(label)}
-                  >
-                    <Icon size={18} strokeWidth={1.9} />
-                    <span>{label}</span>
-                    {label === "Applications" && <b>{broker ? "24" : "1"}</b>}
-                    {label === "Notifications" && <b className="unread-count">5</b>}
-                  </button>
-                </div>
+                <button
+                  key={label}
+                  className={"nav-item " + (section === label ? "active" : "")}
+                  aria-current={page === label ? "page" : undefined}
+                  onClick={() => go(label)}
+                >
+                  <Icon size={18} strokeWidth={1.9} />
+                  <span>{label}</span>
+                  {label === "Applications" && <b>{broker ? "24" : "1"}</b>}
+                </button>
               ))}
           </nav>
+          <section className="side-recent" aria-label="Recently viewed">
+            <span className="nav-label">Recent</span>
+            {(broker ? [initialApps[0], initialApps[1], initialApps[3]] : [initialApps[0]]).map((a) => (
+              <button
+                key={a[2]}
+                className={
+                  "recent-item" + (page === "Application details" && selected[2] === a[2] ? " current" : "")
+                }
+                onClick={() => {
+                  setSelected(a);
+                  go("Application details");
+                }}
+              >
+                <span className="avatar xs">{a[0]}</span>
+                <span className="recent-text">
+                  <b>{a[1]}</b>
+                  <small>
+                    {a[3]} <span className="ref">{a[2]}</span>
+                  </small>
+                </span>
+              </button>
+            ))}
+          </section>
         </SidebarContent>
         <SidebarFooter>
-          <button className="user-box" onClick={() => go("Profile")}>
-            <span className="avatar me">{broker ? "OB" : "AC"}</span>
-            <span>
-              {broker ? "Oliver Bennett" : "Amelia Clarke"}
-              <small>Meridian Capital</small>
+          <button
+            className="side-goal"
+            onClick={() => {
+              if (broker) {
+                go("Applications");
+                setFilter("Ready for proposal");
+              } else go("Documents");
+            }}
+          >
+            <span className="side-goal-top">
+              <span>{broker ? "September target" : "Your application"}</span>
+              <b>{broker ? "84%" : "72%"}</b>
             </span>
-            <ChevronsUpDown size={14} />
+            <span
+              className="side-goal-bar"
+              role="progressbar"
+              aria-valuenow={broker ? 84 : 72}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <i style={{ width: broker ? "84%" : "72%" }} />
+            </span>
+            <span className="side-goal-note">
+              {broker ? "£4.21m of £5m, with 3 ready for proposal." : "Next, upload your latest payslip."}
+            </span>
           </button>
+          <ProfileButton broker={broker} onOpen={() => setProfileOpen(true)} />
         </SidebarFooter>
       </Sidebar>
       <div className="app-main">
@@ -281,9 +321,6 @@ export default function Home() {
             >
               <Bell size={18} />
               <i className="bell-dot" aria-hidden="true" />
-            </button>
-            <button className="avatar me small" aria-label="Your profile" onClick={() => go("Profile")}>
-              {broker ? "OB" : "AC"}
             </button>
           </div>
         </header>
@@ -608,8 +645,97 @@ export default function Home() {
         </main>
       </div>
       <Toaster position="bottom-right" />
-      <CloseMobileSidebarOnNavigate page={page + role} />
+      <CloseMobileSidebarOnNavigate page={page + role + selected[2]} />
+      <ProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        broker={broker}
+        onEdit={() => {
+          setProfileOpen(false);
+          go("Profile");
+        }}
+        onSignOut={() => {
+          setProfileOpen(false);
+          go("Login");
+          toast("You’ve been signed out.");
+        }}
+      />
     </SidebarProvider>
+  );
+}
+/** The account card at the foot of the sidebar. On phones it dismisses the sidebar sheet before the profile opens. */
+function ProfileButton({ broker, onOpen }: { broker: boolean; onOpen: () => void }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  return (
+    <button
+      className="user-box"
+      aria-haspopup="dialog"
+      onClick={() => {
+        if (isMobile) setOpenMobile(false);
+        onOpen();
+      }}
+    >
+      <span className="avatar me">{broker ? "OB" : "AC"}</span>
+      <span>
+        {broker ? "Oliver Bennett" : "Amelia Clarke"}
+        <small>Meridian Capital</small>
+      </span>
+      <ChevronsUpDown size={14} />
+    </button>
+  );
+}
+function ProfileDialog({
+  open,
+  onOpenChange,
+  broker,
+  onEdit,
+  onSignOut,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  broker: boolean;
+  onEdit: () => void;
+  onSignOut: () => void;
+}) {
+  const role = broker ? "Broker" : "Borrower";
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="profile-modal">
+        <div className="pm-head">
+          <span className="avatar me pm-avatar">{broker ? "OB" : "AC"}</span>
+          <DialogTitle>{broker ? "Oliver Bennett" : "Amelia Clarke"}</DialogTitle>
+          <DialogDescription>{role}, Meridian Capital</DialogDescription>
+          <span className="badge green">
+            <ShieldCheck size={13} />
+            Verified workspace member
+          </span>
+        </div>
+        <dl className="pm-details">
+          <div>
+            <dt>Email</dt>
+            <dd>{role.toLowerCase()}@example.com</dd>
+          </div>
+          <div>
+            <dt>Mobile</dt>
+            <dd>+44 7700 900123</dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd>London, United Kingdom</dd>
+          </div>
+        </dl>
+        <div className="pm-actions">
+          <button className="btn" onClick={onEdit}>
+            <UserRound size={16} />
+            Edit profile
+          </button>
+          <button className="btn danger" onClick={onSignOut}>
+            <LogOut size={16} />
+            Sign out
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 /** On phones the sidebar is a sheet; choosing a destination should dismiss it. */

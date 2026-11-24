@@ -765,7 +765,7 @@ label textarea:focus,
   gap: 6px;
 }
 [data-slot="sidebar-content"] {
-  padding: 0 12px 12px;
+  padding: 4px 12px 2px;
   gap: 0;
 }
 [data-slot="sidebar-footer"] {
@@ -831,7 +831,7 @@ label textarea:focus,
 
 .nav-label {
   display: block;
-  margin: 18px 0 4px;
+  margin: 20px 0 8px;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 600;
@@ -846,10 +846,10 @@ label textarea:focus,
   align-items: center;
   gap: 11px;
   width: 100%;
-  height: 34px;
-  margin: 1px 0;
-  padding: 0 10px;
-  border-radius: 8px;
+  height: 40px;
+  margin: 3px 0;
+  padding: 0 12px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
   color: var(--label);
@@ -888,20 +888,128 @@ label textarea:focus,
 .nav-item.active b {
   color: rgba(255, 255, 255, 0.85);
 }
-.nav-item b.unread-count {
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--tint);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 18px;
-  text-align: center;
+
+/* Recent: the last few applications you opened, one tap away */
+.side-recent {
+  margin-top: 8px;
 }
-.nav-item.active b.unread-count {
-  background: #fff;
-  color: var(--tint);
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  margin: 2px 0;
+  padding: 6px 12px 6px 10px;
+  border-radius: 10px;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    transform 0.12s ease;
+}
+.recent-item:hover {
+  background: var(--fill-3);
+}
+.recent-item:active {
+  background: var(--fill-2);
+  transform: scale(0.985);
+}
+.recent-item.current {
+  background: var(--fill-2);
+}
+.avatar.xs {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+.recent-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+.recent-text b {
+  overflow: hidden;
+  color: var(--label);
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-text small {
+  display: flex;
+  gap: 6px;
+  color: var(--label-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Short windows: trim Recent before anything in the sidebar has to scroll */
+@media (max-height: 760px) {
+  .recent-item:nth-of-type(n + 3) {
+    display: none;
+  }
+}
+@media (max-height: 715px) {
+  .side-recent {
+    display: none;
+  }
+}
+
+/* Goal card: progress toward this month's target (broker) or the application (borrower) */
+.side-goal {
+  display: block;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 14px 14px 13px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+.side-goal:hover {
+  box-shadow: var(--shadow-raised);
+}
+.side-goal:active {
+  transform: scale(0.985);
+}
+.side-goal-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+}
+.side-goal-top b {
+  color: var(--tint-text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.side-goal-bar {
+  display: block;
+  height: 6px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--fill-2);
+}
+.side-goal-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tint);
+  animation: track-in 1.1s var(--ease) 0.25s backwards;
+}
+.side-goal-note {
+  display: block;
+  color: var(--label-2);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .user-box {
@@ -3452,6 +3560,7 @@ label textarea:focus,
     opacity 0.2s ease;
 }
 .side-nav .slide-indicator {
+  border-radius: 10px;
   background: var(--tint);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.08),
@@ -3840,6 +3949,90 @@ label textarea:focus,
   }
 }
 
+/* Profile dialog — opened from the account card in the sidebar */
+[data-slot="dialog-content"].profile-modal {
+  max-width: min(380px, calc(100% - 32px));
+  gap: 0;
+  padding: 32px 24px 24px;
+}
+.pm-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 22px;
+  text-align: center;
+}
+.pm-avatar {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(217, 179, 106, 0.55),
+    0 8px 22px rgba(0, 0, 0, 0.14);
+  animation: pm-avatar-in 0.5s var(--ease) 0.05s backwards;
+}
+@keyframes pm-avatar-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+.pm-head [data-slot="dialog-title"] {
+  font-size: 21px;
+  letter-spacing: -0.022em;
+}
+.pm-head .badge {
+  margin-top: 12px;
+}
+.pm-details {
+  margin: 0 0 20px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--fill-3);
+}
+.pm-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.pm-details > div + div {
+  border-top: 1px solid var(--separator);
+}
+.pm-details dt {
+  flex-shrink: 0;
+  color: var(--label-2);
+}
+.pm-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-weight: 500;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-actions {
+  display: grid;
+  gap: 8px;
+}
+.pm-actions .btn {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+}
+.btn.danger {
+  color: var(--red);
+}
+.btn.danger:hover {
+  background: var(--red-tint);
+}
+
 /* ==========================================================================
    Accessibility preferences
    ========================================================================== */
@@ -3897,6 +4090,8 @@ label textarea:focus,
   .builder-toolbar .badge,
   [data-slot="checkbox-indicator"],
   .icon-swap,
+  .pm-avatar,
+  .side-goal-bar i,
   .ref-copy-icon > svg,
   .bell:hover svg {
     animation: none;
@@ -3907,6 +4102,8 @@ label textarea:focus,
   }
   .org:active,
   .user-box:active,
+  .recent-item:active,
+  .side-goal:active,
   .loan-options > button:hover .loan-icon,
   .btn:hover svg.lucide-arrow-right,
   .text-button:hover svg.lucide-chevron-right,
