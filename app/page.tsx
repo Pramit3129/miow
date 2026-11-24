@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Building2,
   TrendingUp,
+  TrendingDown,
   X,
 } from "lucide-react";
 import {
@@ -58,7 +59,20 @@ const navigation = [
   ["Profile", User],
 ] as const;
 /** Pipeline value (£m) over the last eleven months, for the hero sparkline. */
-const pipelineTrend = [3.05, 3.2, 3.12, 3.45, 3.55, 3.48, 3.73, 3.9, 3.81, 4.05, 4.21];
+const pipelineTrend = [3.05, 3.2, 3.12, 3.45, 3.55, 3.48, 3.62, 3.81, 3.9, 3.732, 4.21];
+const trendMonths = [
+  "November 2025",
+  "December 2025",
+  "January 2026",
+  "February 2026",
+  "March 2026",
+  "April 2026",
+  "May 2026",
+  "June 2026",
+  "July 2026",
+  "August 2026",
+  "September 2026",
+];
 export default function Home() {
   const [page, setPage] = useState("Dashboard");
   const [role, setRole] = useState("Broker");
@@ -266,6 +280,7 @@ export default function Home() {
               onClick={() => go("Notifications")}
             >
               <Bell size={18} />
+              <i className="bell-dot" aria-hidden="true" />
             </button>
             <button className="avatar me small" aria-label="Your profile" onClick={() => go("Profile")}>
               {broker ? "OB" : "AC"}
@@ -296,21 +311,7 @@ export default function Home() {
                 {broker ? (
                   <>
                     <section className="pipeline" aria-label="Pipeline summary">
-                      <div className="pipeline-total">
-                        <div className="metric-label">Active pipeline</div>
-                        <strong>
-                          <CountUp value={4.21} decimals={2} prefix="£" />
-                          <span>m</span>
-                        </strong>
-                        <div className="growth">
-                          <span className="growth-pill">
-                            <TrendingUp size={13} strokeWidth={2.4} />
-                            12.8%
-                          </span>
-                          <span>on last month</span>
-                        </div>
-                        <Sparkline values={pipelineTrend} />
-                      </div>
+                      <PipelineCard />
                       <div className="metrics">
                         {(
                           [
@@ -617,27 +618,98 @@ function CloseMobileSidebarOnNavigate({ page }: { page: string }) {
   useEffect(() => setOpenMobile(false), [page, setOpenMobile]);
   return null;
 }
-function Sparkline({ values }: { values: number[] }) {
+/**
+ * Hero pipeline card. Scrubbing the chart (hover, or drag on touch) swaps the headline
+ * for that month's figure, the way Stocks does; letting go returns to today.
+ */
+function PipelineCard() {
+  const [scrub, setScrub] = useState<number | null>(null);
+  const [touched, setTouched] = useState(false);
+  const last = pipelineTrend.length - 1;
+  const i = scrub ?? last;
+  const value = pipelineTrend[i];
+  const prev = pipelineTrend[Math.max(0, i - 1)];
+  const change = i === 0 ? 0 : ((value - prev) / prev) * 100;
+  const onScrub = (next: number | null) => {
+    if (next !== null && !touched) setTouched(true);
+    setScrub(next);
+  };
+  return (
+    <div className={"pipeline-total" + (scrub !== null ? " scrubbing" : "")}>
+      <div className="metric-label">{scrub === null ? "Active pipeline" : trendMonths[i]}</div>
+      <strong aria-live="polite">
+        {touched ? (
+          <span className="count-up">£{value.toFixed(2)}</span>
+        ) : (
+          <CountUp value={4.21} decimals={2} prefix="£" />
+        )}
+        <span className="unit">m</span>
+      </strong>
+      <div className="growth">
+        <span className={"growth-pill" + (change < 0 ? " down" : "")}>
+          {change < 0 ? (
+            <TrendingDown size={13} strokeWidth={2.4} />
+          ) : (
+            <TrendingUp size={13} strokeWidth={2.4} />
+          )}
+          {Math.abs(change).toFixed(1)}%
+        </span>
+        <span>on previous month</span>
+      </div>
+      <Sparkline values={pipelineTrend} active={scrub} onScrub={onScrub} />
+    </div>
+  );
+}
+function Sparkline({
+  values,
+  active,
+  onScrub,
+}: {
+  values: number[];
+  active: number | null;
+  onScrub: (i: number | null) => void;
+}) {
   const w = 240;
-  const h = 56;
+  const h = 64;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const pts = values.map((v, i) => [
     (i / (values.length - 1)) * w,
-    h - 4 - ((v - min) / (max - min || 1)) * (h - 10),
+    h - 6 - ((v - min) / (max - min || 1)) * (h - 16),
   ]);
   const line = pts.map(([x, y], i) => (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1)).join(" ");
+  const pick = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    onScrub(Math.round(ratio * (values.length - 1)));
+  };
+  const at = active === null ? null : pts[active];
   return (
-    <svg className="sparkline" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="var(--tint)" stopOpacity="0.18" />
-          <stop offset="1" stopColor="var(--tint)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={`${line} L${w} ${h} L0 ${h} Z`} fill="url(#spark-fill)" />
-      <path d={line} fill="none" stroke="var(--tint)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-    </svg>
+    <div
+      className="spark-wrap"
+      onPointerMove={pick}
+      onPointerDown={pick}
+      onPointerLeave={() => onScrub(null)}
+      onPointerCancel={() => onScrub(null)}
+      onPointerUp={(e) => e.pointerType !== "mouse" && onScrub(null)}
+    >
+      <svg className="sparkline" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--tint)" stopOpacity="0.2" />
+            <stop offset="1" stopColor="var(--tint)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={`${line} L${w} ${h} L0 ${h} Z`} fill="url(#spark-fill)" />
+        <path d={line} fill="none" stroke="var(--tint)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      </svg>
+      {at && (
+        <>
+          <span className="scrub-line" style={{ left: `${(at[0] / w) * 100}%` }} />
+          <span className="scrub-point" style={{ left: `${(at[0] / w) * 100}%`, top: `${(at[1] / h) * 100}%` }} />
+        </>
+      )}
+    </div>
   );
 }
 function PageHeading({

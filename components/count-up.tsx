@@ -30,7 +30,8 @@ export function CountUp({
     let frame = 0;
     const start = performance.now();
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
+      // rAF timestamps can predate `start` by a frame; clamp so we never show a negative value.
+      const t = Math.max(0, Math.min(1, (now - start) / duration));
       const eased = 1 - Math.pow(1 - t, 4);
       el.textContent = fmt(value * eased);
       if (t < 1) frame = requestAnimationFrame(tick);

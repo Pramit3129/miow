@@ -64,7 +64,7 @@
   --seg-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
 
   /* Depth */
-  --shadow-card: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.025);
+  --shadow-card: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.035);
   --shadow-raised: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.08);
   --shadow-overlay: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 10px 30px rgba(0, 0, 0, 0.12), 0 30px 80px rgba(0, 0, 0, 0.16);
 
@@ -1125,6 +1125,12 @@ label textarea:focus,
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-card);
 }
+.pipeline-total .metric-label {
+  transition: color 0.2s ease;
+}
+.pipeline-total.scrubbing .metric-label {
+  color: var(--label);
+}
 .metric-label {
   display: flex;
   align-items: center;
@@ -1143,11 +1149,16 @@ label textarea:focus,
   letter-spacing: -0.032em;
   font-variant-numeric: tabular-nums;
 }
-.pipeline-total strong > span:not(.count-up) {
+.pipeline-total strong > .unit {
+  margin-left: 2px;
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--label-3);
+}
+.growth-pill.down {
+  background: var(--red-tint);
+  color: var(--red);
 }
 .growth {
   display: flex;
@@ -1169,12 +1180,42 @@ label textarea:focus,
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+.spark-wrap {
+  position: relative;
+  width: calc(100% + 44px);
+  height: 76px;
+  margin: auto -22px 0;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+.pipeline-total .growth {
+  margin-bottom: 16px;
+}
 .sparkline {
   display: block;
-  width: calc(100% + 44px);
-  height: 64px;
-  margin: auto -22px 0;
-  padding-top: 14px;
+  width: 100%;
+  height: 100%;
+}
+.scrub-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: linear-gradient(transparent, var(--separator-strong) 30%, var(--separator-strong));
+  pointer-events: none;
+}
+.scrub-point {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tint);
+  box-shadow:
+    0 0 0 2.5px var(--surface),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 .metrics {
   display: grid;
@@ -3096,17 +3137,19 @@ label textarea:focus,
     column-gap: 32px;
     padding-bottom: 18px;
   }
-  .pipeline-total > :not(.sparkline) {
+  .pipeline-total > :not(.spark-wrap) {
     grid-column: 1;
   }
-  .sparkline {
+  .pipeline-total .growth {
+    margin-bottom: 0;
+  }
+  .spark-wrap {
     grid-column: 2;
     grid-row: 1 / span 3;
     width: 100%;
     height: 100%;
-    min-height: 90px;
+    min-height: 96px;
     margin: 0;
-    padding: 0;
   }
   .dashboard-columns {
     grid-template-columns: minmax(0, 1fr) 300px;
@@ -3183,12 +3226,13 @@ label textarea:focus,
   .pipeline-total {
     grid-template-columns: minmax(0, 1fr);
   }
-  .sparkline {
+  .spark-wrap {
     grid-column: 1;
     grid-row: auto;
-    min-height: 64px;
+    height: 76px;
+    min-height: 0;
     width: calc(100% + 44px);
-    margin: 10px -22px -18px;
+    margin: 14px -22px -18px;
   }
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3763,6 +3807,39 @@ label textarea:focus,
   }
 }
 
+/* Unread indicator on the bell: pops in once, then stays put */
+.bell .bell-dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red-solid);
+  box-shadow: 0 0 0 2px var(--canvas);
+  animation: dot-pop 0.45s var(--ease) 0.5s backwards;
+}
+@keyframes dot-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* Loading placeholders shimmer instead of blinking */
+[data-slot="skeleton"] {
+  background: linear-gradient(100deg, var(--fill-3) 30%, var(--fill) 50%, var(--fill-3) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
 /* ==========================================================================
    Accessibility preferences
    ========================================================================== */
@@ -3811,6 +3888,8 @@ label textarea:focus,
       .info-grid > div
     ),
   .sparkline,
+  .bell .bell-dot,
+  [data-slot="skeleton"],
   [data-slot="progress-indicator"],
   .progress-track i,
   .document-row .badge,
