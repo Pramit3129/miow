@@ -1,4 +1,4 @@
-# Aven — lending UI prototype
+# One Sovereign — lending UI prototype
 
 A frontend-only React and TypeScript prototype for a loan application workspace.
 
